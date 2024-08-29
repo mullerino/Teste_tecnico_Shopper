@@ -5,7 +5,7 @@ import { Measure, UploadMeterReadingRequest } from '../types/meterReading'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 async function extractMeterReading(imageBase64: string): Promise<string> {
-  const genAI = new GoogleGenerativeAI("AIzaSyA9rWYBKSO5Ocl_PtUtEsdxedtOi23wQPw")
+  const genAI = new GoogleGenerativeAI("")
 
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
