@@ -1,8 +1,10 @@
 import {Router} from 'express'
-import { uploadMeterImage } from '../controllers/meterReadingController'
+import { handleMeasurementList, handleMeasurementConfirmation, handleUploadMeasurement } from '../controllers/meterReadingController'
 
 const routes = Router()
 
-routes.post('/upload', uploadMeterImage)
+routes.post('/upload', handleUploadMeasurement)
+routes.patch('/confirm', handleMeasurementConfirmation)
+routes.get('/:customer_code/list', handleMeasurementList)
 
 export default routes
