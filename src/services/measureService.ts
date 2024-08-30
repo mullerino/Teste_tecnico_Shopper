@@ -1,12 +1,12 @@
 import mysql, { Connection, RowDataPacket } from 'mysql2/promise'
 import { v4 as uuidv4 } from 'uuid'
-import { ConfirmMeterReadingRequest, UploadMeterReadingRequest } from '../types/meterReading'
+import { ConfirmMeterReadingRequest, UploadMeterReadingRequest } from '../types/measure'
 import { s3Client, cfg } from '../config/config'
 
 import { PutObjectCommand, PutObjectCommandInput } from '@aws-sdk/client-s3'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-async function extractMeterReading(imageBase64: string): Promise<string> {
+async function extractMeasure(imageBase64: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY as string
   const genAI = new GoogleGenerativeAI(apiKey)
 
@@ -73,7 +73,7 @@ export async function uploadMeasure(body: UploadMeterReadingRequest) {
       throw new Error('INVALID_DATA: Todos os campos são obrigatórios.')
     }
 
-    const measureValue = await extractMeterReading(image)
+    const measureValue = await extractMeasure(image)
 
     const [existingMeasures] = await connection.execute<RowDataPacket[]>(
       'SELECT * FROM measures WHERE customer_code = ? AND measure_type = ? AND MONTH(measure_datetime) = MONTH(?)',

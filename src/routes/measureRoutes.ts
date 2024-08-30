@@ -1,5 +1,5 @@
 import {Router} from 'express'
-import { handleMeasurementList, handleMeasurementConfirmation, handleUploadMeasurement } from '../controllers/meterReadingController'
+import { handleMeasurementList, handleMeasurementConfirmation, handleUploadMeasurement } from '../controllers/measureController'
 
 const routes = Router()
 

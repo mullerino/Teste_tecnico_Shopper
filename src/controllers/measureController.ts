@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
-import { ConfirmMeterReadingRequest, Measurement, MeasurementResponse, UploadMeterReadingRequest } from '../types/meterReading'
-import { confirmMeasure, getMeasuresByCustomerCode, uploadMeasure } from '../services/meterReadingService'
+import { ConfirmMeterReadingRequest, Measurement, MeasurementResponse, UploadMeterReadingRequest } from '../types/measure'
+import { confirmMeasure, getMeasuresByCustomerCode, uploadMeasure } from '../services/measureService'
 
 export const handleUploadMeasurement = async (req: Request, res: Response) => {
   const { image, customer_code, measure_datetime, measure_type }: UploadMeterReadingRequest = req.body
