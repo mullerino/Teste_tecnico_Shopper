@@ -21,7 +21,7 @@ export const handleUploadMeasurement = async (req: Request, res: Response) => {
       if (error.message.includes('INVALID_DATA')) {
         return res.status(400).json({
           error_code: 'INVALID_DATA',
-          error_description: error.message || 'Os dados fornecidos no corpo da requisição são inválidos.'
+          error_description: 'Os dados fornecidos no corpo da requisição são inválidos.'
         })
       }
 
@@ -47,7 +47,7 @@ export const handleMeasurementConfirmation = async (req: Request, res: Response)
     await confirmMeasure({ measure_uuid, confirmed_value })
 
     return res.status(200).json({
-      "sucess": true
+      "success": true
     })
   }
   catch (error) {
@@ -104,13 +104,13 @@ export const handleMeasurementList = async (req: Request, res: Response) => {
       if (error.message.includes('INVALID_TYPE')) {
         return res.status(400).json({
           error_code: 'INVALID_TYPE',
-          error_description: error.message || 'Tipo de medição não permitida'
+          error_description: 'Tipo de medição não permitida'
         })
       }
       if (error.message.includes('MEASURES_NOT_FOUND')) {
         return res.status(404).json({
-          error_code: 'MEASURE_NOT_FOUND',
-          error_description: '"Nenhuma leitura encontrada'
+          error_code: 'MEASURES_NOT_FOUND',
+          error_description: 'Nenhuma leitura encontrada'
         })
       }
     }
