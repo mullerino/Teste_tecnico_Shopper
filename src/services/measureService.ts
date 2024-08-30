@@ -1,10 +1,11 @@
 import mysql, { Connection, RowDataPacket } from 'mysql2/promise'
 import { v4 as uuidv4 } from 'uuid'
 import { ConfirmMeterReadingRequest, UploadMeterReadingRequest } from '../types/measure'
-import { s3Client, cfg } from '../config/config'
+import { s3Client, cfg } from '../../config/config'
 
 import { PutObjectCommand, PutObjectCommandInput } from '@aws-sdk/client-s3'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import logger from '../../log/logger'
 
 async function extractMeasure(imageBase64: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY as string
@@ -25,7 +26,7 @@ async function extractMeasure(imageBase64: string): Promise<string> {
     const result = await model.generateContent([prompt, image])
     return result.response.text()
   } catch (error) {
-    console.error("Error identifying measure:", error)
+    logger.error("Error identifying measure:", error)
     throw new Error("Failed to identify measure")
   }
 }
@@ -157,7 +158,7 @@ export async function confirmMeasure(body: ConfirmMeterReadingRequest) {
     await connection.execute(query, values)
   }
   catch (error) {
-    console.log(error)
+    logger.error(error)
     if (error instanceof Error) {
       throw error
     } else {
@@ -206,6 +207,7 @@ export async function getMeasuresByCustomerCode(customer_code : string, measure_
     return rows
   }
   catch (error) {
+    logger.error(error)
     if(error instanceof Error) {
       throw error
     } else {

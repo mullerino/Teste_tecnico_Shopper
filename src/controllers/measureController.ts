@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { ConfirmMeterReadingRequest, Measurement, MeasurementResponse, UploadMeterReadingRequest } from '../types/measure'
 import { confirmMeasure, getMeasuresByCustomerCode, uploadMeasure } from '../services/measureService'
+import logger from '../../log/logger'
 
 export const handleUploadMeasurement = async (req: Request, res: Response) => {
   const { image, customer_code, measure_datetime, measure_type }: UploadMeterReadingRequest = req.body
@@ -15,7 +16,7 @@ export const handleUploadMeasurement = async (req: Request, res: Response) => {
     })  
   }
   catch (error) {
-    console.log(error)
+    logger.error(error)
 
     if (error instanceof Error) {
       if (error.message.includes('INVALID_DATA')) {

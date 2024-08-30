@@ -1,7 +1,8 @@
 import express, { Application } from 'express'
-import { cfg } from './config/config'
+import { cfg } from '../config/config'
 import routes from './routes/measureRoutes'
 import dotenv from 'dotenv'
+import logger from '../log/logger'
 
 const app: Application = express()
 
@@ -13,7 +14,7 @@ function main() {
   app.use(routes)
 
   const server = app.listen(cfg.server.port, () => {
-    console.log(`Servidor rodando na porta ${cfg.server.port}`)
+    logger.info(`Server running on port ${cfg.server.port}`)
   })
 
   return server
