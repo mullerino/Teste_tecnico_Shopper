@@ -1,11 +1,14 @@
 import mysql, { Connection, RowDataPacket } from 'mysql2/promise'
 import { v4 as uuidv4 } from 'uuid'
-import { Measure, UploadMeterReadingRequest } from '../types/meterReading'
+import { ConfirmMeterReadingRequest, UploadMeterReadingRequest } from '../types/meterReading'
+import { s3Client, cfg } from '../config/config'
 
+import { PutObjectCommand, PutObjectCommandInput } from '@aws-sdk/client-s3'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 async function extractMeterReading(imageBase64: string): Promise<string> {
-  const genAI = new GoogleGenerativeAI("")
+  const apiKey = process.env.GEMINI_API_KEY as string
+  const genAI = new GoogleGenerativeAI(apiKey)
 
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
@@ -29,15 +32,35 @@ async function extractMeterReading(imageBase64: string): Promise<string> {
 
 async function connectToDatabase(): Promise<Connection> {
   const connection = await mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'senha',
-    database: 'shopper',
+    host: cfg.mysql.host,
+    user: cfg.mysql.user,
+    password: cfg.mysql.password,
+    database: cfg.mysql.database,
     connectionLimit: 10,
   })
 
   console.log('Conectado ao MySQL com sucesso!')
   return connection
+}
+
+async function uploadImageAndGetUrl(imageBase64: string, customerCode: string, measureUuid: string): Promise<string> {
+  const s3Key = `${customerCode}/${measureUuid}.jpg`
+  const base64Data = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ""), 'base64')
+
+  const s3Params: PutObjectCommandInput = {
+    Bucket: process.env.BUCKET_NAME || '',
+    Key: s3Key,
+    Body: base64Data,
+    ContentEncoding: 'base64',
+    ContentType: 'image/jpeg',
+  }
+
+  const command = new PutObjectCommand(s3Params)
+  await s3Client.send(command)
+
+  const objectUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`
+
+  return objectUrl
 }
 
 export async function uploadMeasure(body: UploadMeterReadingRequest) {
@@ -47,7 +70,7 @@ export async function uploadMeasure(body: UploadMeterReadingRequest) {
 
   try {
     if (!image || !customer_code || !measure_datetime || !measure_type) {
-      throw new Error('Todos os campos são obrigatórios.')
+      throw new Error('INVALID_DATA: Todos os campos são obrigatórios.')
     }
 
     const measureValue = await extractMeterReading(image)
@@ -58,19 +81,136 @@ export async function uploadMeasure(body: UploadMeterReadingRequest) {
     )
 
     if(existingMeasures.length !== 0) {
-      throw new Error('Já existe uma leitura para este mês e tipo.')
+      throw new Error('DOUBLE_REPORT: Já existe uma leitura para este mês e tipo.')
     }
 
-    const measure_uuid = uuidv4()
+    const measureUuid = uuidv4()
+    const imageUrl = await uploadImageAndGetUrl(image, customer_code, measureUuid)
+
+    const query = `
+    INSERT INTO measures (
+      customer_code, 
+      measure_uuid, 
+      measure_datetime, 
+      measure_type, 
+      image_url
+    ) VALUES (?, ?, ?, ?, ?)
+    `
+
+    const values = [
+      customer_code,
+      measureUuid,
+      new Date(measure_datetime),
+      measure_type,
+      imageUrl
+    ]
+
+    await connection.execute(query, values)
     
     return {
-      image_url: '',
-      measure_uuid: measure_uuid,
+      image_url: imageUrl,
       measure_value: measureValue,
+      measure_uuid: measureUuid,
     }
   } catch (error) {
-    throw(error)
+    if (error instanceof Error) {
+      throw error
+    } else {
+      throw new Error('INTERNAL_ERROR: Ocorreu um erro inesperado.')
+    }
   } finally {
     await connection.end()
+  }
+}
+
+export async function confirmMeasure(body: ConfirmMeterReadingRequest) {
+  const { measure_uuid, confirmed_value } = body
+  const connection : Connection = await connectToDatabase()
+
+  try {
+    if (!measure_uuid || typeof confirmed_value !== 'number') {
+      throw new Error('INVALID_DATA: Todos os campos são obrigatórios.')
+    }
+
+    const [existingMeasure] = await connection.execute<RowDataPacket[]>(
+      'SELECT * FROM measures WHERE measure_uuid = ?',
+      [measure_uuid]
+    )
+
+    if(existingMeasure.length == 0) {
+      throw new Error('MEASURE_NOT_FOUND: Leitura não encontrada.')
+    }
+
+    const currentMeasure = existingMeasure[0]
+
+    if(currentMeasure.has_confirmed) {
+      throw new Error('CONFIRMATION_DUPLICATE: Leitura do mês já realizada.')
+    }
+
+    const query = `
+      UPDATE measures SET measure_value = ?, has_confirmed = 1 WHERE measure_uuid = ?
+    `
+    const values = [
+      confirmed_value,
+      measure_uuid
+    ]
+
+    await connection.execute(query, values)
+  }
+  catch (error) {
+    console.log(error)
+    if (error instanceof Error) {
+      throw error
+    } else {
+      throw new Error('INTERNAL_ERROR: Ocorreu um erro inesperado.')
+    }
+  }
+  finally {
+    await connection.end()
+  }
+}
+
+export async function getMeasuresByCustomerCode(customer_code : string, measure_type : string | undefined) {
+  const connection : Connection = await connectToDatabase()
+
+  try {
+    if(measure_type) {
+      const measureType = measure_type.toUpperCase()
+
+      if(measureType != "WATER" && measureType != "GAS" ) {
+        throw new Error('INVALID_TYPE: Tipo de medição não permitida')
+      }
+    }
+
+    let query = `
+    SELECT 
+      measure_uuid,
+      measure_value,
+      measure_datetime,
+      measure_type,
+      has_confirmed,
+      image_url
+    FROM 
+      measures
+    WHERE 
+      customer_code = ?
+    `
+    const queryParams: any[] = [customer_code]
+
+    if (measure_type) {
+      query += ' AND measure_type = ?'
+      queryParams.push(measure_type)
+    }
+
+    const [rows] = await connection.execute<RowDataPacket[]>(query, queryParams)
+
+    return rows
+  }
+  catch (error) {
+    if(error instanceof Error) {
+      throw error
+    } else {
+      throw new Error('INTERNAL_ERROR: Ocorreu um erro inesperado.') 
+    }
   }
 }
