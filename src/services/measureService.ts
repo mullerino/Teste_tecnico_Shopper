@@ -39,7 +39,6 @@ async function connectToDatabase(): Promise<Connection> {
     connectionLimit: 10,
   })
 
-  console.log('Conectado ao MySQL com sucesso!')
   return connection
 }
 
@@ -48,7 +47,7 @@ async function uploadImageAndGetUrl(imageBase64: string, customerCode: string, m
   const base64Data = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ""), 'base64')
 
   const s3Params: PutObjectCommandInput = {
-    Bucket: process.env.BUCKET_NAME || '',
+    Bucket: process.env.BUCKET_NAME || 'account-imgs',
     Key: s3Key,
     Body: base64Data,
     ContentEncoding: 'base64',
