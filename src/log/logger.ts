@@ -10,7 +10,7 @@ const logger = bunyan.createLogger({
     },
     {
       type: 'rotating-file',
-      path: './log/app.log',
+      path: './src/log/app.log',
       period: '30d',
       count: 10,
     },

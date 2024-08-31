@@ -1,8 +1,8 @@
 import express, { Application } from 'express'
-import { cfg } from '../config/config'
+import { cfg } from './config/config'
 import routes from './routes/measureRoutes'
 import dotenv from 'dotenv'
-import logger from '../log/logger'
+import logger from './log/logger'
 
 const app: Application = express()
 
