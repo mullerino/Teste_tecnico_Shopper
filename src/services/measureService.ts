@@ -1,11 +1,11 @@
 import mysql, { Connection, RowDataPacket } from 'mysql2/promise'
 import { v4 as uuidv4 } from 'uuid'
 import { ConfirmMeterReadingRequest, UploadMeterReadingRequest } from '../types/measure'
-import { s3Client, cfg } from '../../config/config'
+import { s3Client, cfg } from '../config/config'
 
 import { PutObjectCommand, PutObjectCommandInput } from '@aws-sdk/client-s3'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import logger from '../../log/logger'
+import logger from '../log/logger'
 
 async function extractMeasure(imageBase64: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY as string
