@@ -46,6 +46,7 @@ Este projeto é uma aplicação Node.js construída como parte de um teste técn
    cd Teste_tecnico_Shopper
 
 2. **Configurando Variáveis de Ambiente**
+   Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
 
    ```bash
     GEMINI_API_KEY=<sua-chave-gemini>
