@@ -85,10 +85,4 @@ A aplicação utiliza o Jest para testes unitários. Para rodar os testes, utili
 
 Os testes estão localizados no diretório src/tests e cobrem as principais funcionalidades das rotas implementadas.
 
-## 8. Credenciais AWS
-
-Há um arquivo zipado no repositório contendo as credenciais de um IAM na AWS, configurado especificamente para fazer o upload das imagens que são processadas pelo Gemini. Essas credenciais devem ser inseridas no arquivo `.env` conforme indicado acima.
-
-> **Nota Importante**: Estou ciente dos riscos envolvidos em armazenar credenciais dessa forma, no entanto, esta foi uma exceção feita para garantir que minha solução pudesse ser executada sem prejuízos ao seu desempenho. As credenciais são limitadas estritamente ao uso necessário para esta aplicação e foram configuradas com as devidas permissões para minimizar riscos.
-
 
